@@ -1,0 +1,1306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Earth Resonance — Hear How Our Planet Changes</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;1,6..72,400&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg-dark: #070a0f;
+      --card-bg: rgba(14, 20, 29, 0.85);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --accent-green: #90e0c0;
+      --accent-green-bg: rgba(144, 224, 192, 0.15);
+      --accent-teal: #1d3b37;
+      --text-muted: #8c9ba8;
+      --text-light: #eaf0f6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg-dark);
+      color: var(--text-light);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      overflow: hidden;
+      height: 100vh;
+      width: 100vw;
+      user-select: none;
+    }
+
+    /* 3D Canvas Background */
+    #globe-container {
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 100%;
+      z-index: 1;
+    }
+
+    /* Clean View State */
+    body.clean-mode .hero-info,
+    body.clean-mode .legend-panel,
+    body.clean-mode .right-sidebar {
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(12px);
+    }
+
+    /* Top Navigation */
+    .top-bar {
+      position: absolute;
+      top: 24px; left: 32px; right: 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      z-index: 20;
+      pointer-events: none;
+    }
+    .brand-title {
+      font-family: 'Newsreader', serif;
+      font-size: 1.5rem;
+      font-weight: 400;
+      letter-spacing: -0.5px;
+      pointer-events: auto;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+    .top-controls {
+      display: flex;
+      gap: 10px;
+      pointer-events: auto;
+    }
+    .pill-btn {
+      background: rgba(18, 25, 36, 0.75);
+      border: 1px solid var(--card-border);
+      color: var(--text-light);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .pill-btn:hover {
+      background: rgba(255, 255, 255, 0.15);
+      border-color: rgba(255, 255, 255, 0.3);
+    }
+    .pill-btn.active {
+      background: var(--accent-green);
+      color: #071311;
+      border-color: var(--accent-green);
+      font-weight: 600;
+    }
+
+    /* Left Hero Header */
+    .hero-info {
+      position: absolute;
+      top: 90px; left: 32px;
+      max-width: 320px;
+      z-index: 10;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hero-title {
+      font-family: 'Newsreader', serif;
+      font-size: 2.8rem;
+      font-weight: 400;
+      line-height: 1.08;
+      margin-bottom: 12px;
+      letter-spacing: -1px;
+      text-shadow: 0 4px 16px rgba(0,0,0,0.8);
+    }
+    .hero-subtitle {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+      text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+    }
+
+    /* Bottom Left Map Legend */
+    .legend-panel {
+      position: absolute;
+      bottom: 120px; left: 32px;
+      z-index: 10;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .legend-title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+    .color-scale-bar {
+      width: 190px;
+      height: 8px;
+      border-radius: 4px;
+      background: linear-gradient(90deg, #1e5799 0%, #207cca 25%, #f1da36 60%, #e65c00 85%, #d10303 100%);
+      margin-bottom: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+    }
+    .legend-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      width: 190px;
+    }
+
+    /* Right Sidebar (Dr. Jo Climate Guide & Chat) */
+    .right-sidebar {
+      position: absolute;
+      top: 24px; right: 32px; bottom: 120px;
+      width: 390px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      backdrop-filter: blur(20px);
+      z-index: 15;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: 0 20px 48px rgba(0,0,0,0.6);
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .right-sidebar.collapsed {
+      transform: translateX(430px);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* Sidebar Floating Open Button */
+    #btn-open-sidebar {
+      position: absolute;
+      top: 86px;
+      right: 32px;
+      z-index: 12;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      color: var(--text-light);
+      padding: 10px 18px;
+      border-radius: 30px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      display: none;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      backdrop-filter: blur(12px);
+      transition: all 0.2s;
+    }
+    #btn-open-sidebar:hover {
+      background: rgba(255,255,255,0.12);
+      border-color: var(--accent-green);
+    }
+    #btn-open-sidebar.visible {
+      display: flex;
+    }
+
+    .sidebar-header-bar {
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid var(--card-border);
+      padding: 8px 12px;
+      gap: 6px;
+    }
+    .sidebar-tabs {
+      display: flex;
+      flex: 1;
+      gap: 6px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 7px 10px;
+      border-radius: 8px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn:hover {
+      color: #fff;
+      background: rgba(255,255,255,0.05);
+    }
+    .tab-btn.active {
+      background: var(--accent-green);
+      color: #071311;
+      font-weight: 600;
+    }
+    .sidebar-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: grid;
+      place-items: center;
+      transition: all 0.2s;
+    }
+    .sidebar-close-btn:hover {
+      background: rgba(255,255,255,0.1);
+      color: #fff;
+    }
+
+    /* Tab Panes */
+    .tab-pane {
+      display: none;
+      flex: 1;
+      overflow-y: auto;
+      padding: 18px;
+      flex-direction: column;
+      gap: 16px;
+    }
+    .tab-pane.active {
+      display: flex;
+    }
+
+    .guide-badge {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+    .guide-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: #2a3e56;
+      display: grid;
+      place-items: center;
+      font-size: 0.8rem;
+    }
+    .panel-headline {
+      font-family: 'Newsreader', serif;
+      font-size: 1.45rem;
+      font-weight: 400;
+      color: #fff;
+      margin-bottom: 6px;
+    }
+    .panel-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+    }
+
+    /* Comparison Prediction Card */
+    .predict-card {
+      background: rgba(144, 224, 192, 0.08);
+      border: 1px solid rgba(144, 224, 192, 0.25);
+      border-radius: 12px;
+      padding: 14px;
+    }
+    .predict-step {
+      font-size: 0.65rem;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--accent-green);
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .predict-title {
+      font-family: 'Newsreader', serif;
+      font-size: 1.15rem;
+      margin-bottom: 10px;
+    }
+    .predict-years {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .select-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .select-label {
+      font-size: 0.68rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .year-select {
+      width: 100%;
+      background: #0d1620;
+      border: 1px solid var(--card-border);
+      padding: 8px 10px;
+      border-radius: 8px;
+      color: #fff;
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .year-select:focus {
+      border-color: var(--accent-green);
+    }
+    .compare-action-btn {
+      width: 100%;
+      background: #153830;
+      border: 1px solid var(--accent-green);
+      color: var(--accent-green);
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .compare-action-btn:hover {
+      background: var(--accent-green);
+      color: #071311;
+    }
+
+    /* Evidence & Sources List Styles */
+    .info-card {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .info-card h4 {
+      font-size: 0.88rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .info-card p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+    .info-source-link {
+      font-size: 0.72rem;
+      color: var(--accent-green);
+      text-decoration: none;
+      margin-top: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .info-source-link:hover { text-decoration: underline; }
+
+    /* Chat Section */
+    .chat-section {
+      border-top: 1px solid var(--card-border);
+      padding: 12px 14px;
+      background: rgba(7, 11, 16, 0.6);
+    }
+    .chat-quick-tags {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+    }
+    .quick-tag {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      font-size: 0.7rem;
+      padding: 3px 8px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .quick-tag:hover {
+      color: #fff;
+      border-color: var(--accent-green);
+    }
+    .chat-messages {
+      max-height: 110px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-bottom: 10px;
+      font-size: 0.78rem;
+    }
+    .chat-msg {
+      padding: 8px 12px;
+      border-radius: 10px;
+      line-height: 1.4;
+    }
+    .chat-msg.bot {
+      background: rgba(255,255,255,0.06);
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+    .chat-msg.user {
+      background: #174238;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+    .chat-input-bar {
+      display: flex;
+      gap: 8px;
+    }
+    .chat-input-bar input {
+      flex: 1;
+      background: rgba(0,0,0,0.5);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: #fff;
+      font-size: 0.8rem;
+      outline: none;
+    }
+    .chat-input-bar input:focus { border-color: var(--accent-green); }
+    .chat-send-btn {
+      background: var(--accent-green);
+      border: none;
+      color: #071311;
+      font-weight: 700;
+      padding: 0 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .chat-send-btn:hover { background: #b0f5da; }
+
+    /* Bottom Timeline Bar */
+    .bottom-timeline-deck {
+      position: absolute;
+      bottom: 20px; left: 32px; right: 32px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      backdrop-filter: blur(20px);
+      padding: 12px 20px;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.5);
+    }
+    .timeline-metric {
+      min-width: 150px;
+      display: flex;
+      flex-direction: column;
+    }
+    .current-year {
+      font-family: 'Newsreader', serif;
+      font-size: 1.8rem;
+      line-height: 1;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .current-anomaly {
+      font-size: 0.85rem;
+      color: #ff9800;
+      font-weight: 600;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .current-freq {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Scrubber & Bar Chart Container */
+    .timeline-scrubber-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      position: relative;
+    }
+    .chart-container {
+      width: 100%;
+      height: 36px;
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .chart-bar {
+      flex: 1;
+      background: #257065;
+      border-radius: 2px 2px 0 0;
+      min-height: 4px;
+      transition: height 0.2s, background 0.2s;
+      cursor: pointer;
+    }
+    .chart-bar.active {
+      background: #ff5722 !important;
+      box-shadow: 0 0 10px #ff5722;
+    }
+    .timeline-slider {
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.1);
+      height: 4px;
+      border-radius: 2px;
+      outline: none;
+      cursor: pointer;
+    }
+    .timeline-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      cursor: pointer;
+      box-shadow: 0 0 10px var(--accent-green);
+    }
+    .timeline-years-legend {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      padding: 0 2px;
+    }
+
+    /* Playback Controls */
+    .playback-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .ctrl-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--card-border);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+    .ctrl-btn:hover { background: rgba(255, 255, 255, 0.15); }
+    .ctrl-btn.play {
+      background: var(--accent-green);
+      color: #071311;
+      font-weight: 700;
+      border: none;
+    }
+  </style>
+
+  <!-- Three.js + OrbitControls -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+</head>
+<body>
+
+  <!-- 3D Canvas -->
+  <div id="globe-container"></div>
+
+  <!-- Top Bar -->
+  <nav class="top-bar">
+    <div class="brand-title">Earth Resonance</div>
+    <div class="top-controls">
+      <button class="pill-btn active" id="btn-toggle-ui" title="Toggle panels for a clear view of the planet">👁 Zen View</button>
+      <button class="pill-btn" id="btn-toggle-box" title="Hide or show the Dr. Jo guide card">📂 Toggle Card</button>
+      <button class="pill-btn" id="btn-reset-view">🌐 Reset Globe</button>
+    </div>
+  </nav>
+
+  <!-- Floating Button to Re-open Guide Sidebar -->
+  <button id="btn-open-sidebar">
+    <span>👩‍🔬</span> Open Guide & Compare
+  </button>
+
+  <!-- Hero Header -->
+  <div class="hero-info">
+    <h1 class="hero-title">Hear how our planet changes.</h1>
+    <p class="hero-subtitle">Compare two years. Listen for the difference generated directly from NASA & global climate observations.</p>
+  </div>
+
+  <!-- Left Map Legend -->
+  <div class="legend-panel">
+    <div class="legend-title">Map temperature anomaly scale</div>
+    <div class="color-scale-bar"></div>
+    <div class="legend-labels">
+      <span>-1.5 °C</span>
+      <span>Baseline (0 °C)</span>
+      <span>+2.0 °C</span>
+    </div>
+  </div>
+
+  <!-- Right Sidebar: Guide, Evidence, Sources & Chat -->
+  <aside class="right-sidebar" id="rightSidebar">
+    <div class="sidebar-header-bar">
+      <div class="sidebar-tabs">
+        <button class="tab-btn active" data-tab="tab-guide">Guide</button>
+        <button class="tab-btn" data-tab="tab-evidence">Evidence</button>
+        <button class="tab-btn" data-tab="tab-sources">Sources</button>
+      </div>
+      <button class="sidebar-close-btn" id="btn-close-sidebar" title="Collapse box">✕</button>
+    </div>
+
+    <!-- TAB 1: GUIDE & YEAR COMPARISON -->
+    <div class="tab-pane active" id="tab-guide">
+      <div class="guide-badge">
+        <span class="guide-avatar">👩‍🔬</span>
+        <div>
+          <strong style="color:#fff;">Dr. Jo</strong> Climate Guide<br/>
+          <small>Global Earth • Temperature • <span id="guide-year-txt">1980</span></small>
+        </div>
+      </div>
+
+      <div>
+        <h2 class="panel-headline">What you're seeing</h2>
+        <p class="panel-desc" id="guide-desc">
+          The selected temperature difference is <strong id="guide-temp-val">+0.26 °C</strong>. Blue indicates cooler and orange/red indicates warmer than the 1951–1980 baseline.
+        </p>
+      </div>
+
+      <!-- Year Comparison Interactive Widget with Dynamic Year Selectors -->
+      <div class="predict-card">
+        <div class="predict-step">Acoustic Comparison</div>
+        <div class="predict-title">Which year sounds warmer?</div>
+        
+        <div class="predict-years">
+          <div class="select-wrapper">
+            <span class="select-label">Year 1</span>
+            <select class="year-select" id="select-year-1"></select>
+          </div>
+          <div class="select-wrapper">
+            <span class="select-label">Year 2</span>
+            <select class="year-select" id="select-year-2"></select>
+          </div>
+        </div>
+
+        <button class="compare-action-btn" id="btn-listen-compare">🔊 Listen & Compare Years</button>
+      </div>
+
+      <p class="panel-desc" style="font-size:0.75rem;">
+        Sound is synthesized from NASA GISTEMP records. As the globe warms, the resonant frequency climbs noticeably.
+      </p>
+    </div>
+
+    <!-- TAB 2: EVIDENCE -->
+    <div class="tab-pane" id="tab-evidence">
+      <div>
+        <h2 class="panel-headline">Empirical Evidence</h2>
+        <p class="panel-desc">Multiple independent scientific indicators corroborate the accelerating planetary thermal trend:</p>
+      </div>
+
+      <div class="info-card">
+        <h4>🌡️ Surface Warming Rate</h4>
+        <p>Global surface temperature has risen by approximately <strong>1.2°C to 1.35°C</strong> above the pre-industrial baseline. The past 10 years are the warmest 10 years on instrumental record.</p>
+      </div>
+
+      <div class="info-card">
+        <h4>🌊 Ocean Heat Content (OHC)</h4>
+        <p>Over <strong>90% of excess heat</strong> trapped by greenhouse gases is absorbed by oceans. The upper 2,000 meters reached record high heat values consecutively over recent years.</p>
+      </div>
+
+      <div class="info-card">
+        <h4>🧊 Cryosphere & Polar Ice</h4>
+        <p>Arctic September sea ice extent has declined by over <strong>12% per decade</strong> since satellite records began in 1979; the Greenland and Antarctic ice sheets have lost trillions of tons of mass.</p>
+      </div>
+
+      <div class="info-card">
+        <h4>📈 Atmospheric CO₂ Concentration</h4>
+        <p>CO₂ concentrations measured at Mauna Loa rose from ~338 ppm in 1980 to over <strong>425 ppm today</strong>, levels unprecedented in at least 800,000 years of Antarctic ice core records.</p>
+      </div>
+    </div>
+
+    <!-- TAB 3: SOURCES & CITATIONS -->
+    <div class="tab-pane" id="tab-sources">
+      <div>
+        <h2 class="panel-headline">Data Provenance</h2>
+        <p class="panel-desc">All historical anomalies and acoustic mappings in Earth Resonance originate from certified climate science repositories:</p>
+      </div>
+
+      <div class="info-card">
+        <h4>NASA GISTEMP v4</h4>
+        <p>GISS Surface Temperature Analysis provided by the Goddard Institute for Space Studies. Combines global meteorological stations and satellite ship/buoy SST.</p>
+        <a class="info-source-link" href="https://data.giss.nasa.gov/gistemp/" target="_blank">🔗 data.giss.nasa.gov/gistemp</a>
+      </div>
+
+      <div class="info-card">
+        <h4>NOAA NCEI GlobalTemp v5</h4>
+        <p>National Oceanic and Atmospheric Administration surface temperature time series, combining land surface and extended reconstructed sea surface temperatures (ERSST v5).</p>
+        <a class="info-source-link" href="https://www.ncei.noaa.gov/access/monitoring/climate-at-a-glance/" target="_blank">🔗 ncei.noaa.gov/access</a>
+      </div>
+
+      <div class="info-card">
+        <h4>Copernicus Climate Change Service (ERA5)</h4>
+        <p>European Centre for Medium-Range Weather Forecasts (ECMWF) atmospheric and ocean reanalysis spanning 1940 to present day.</p>
+        <a class="info-source-link" href="https://climate.copernicus.eu/" target="_blank">🔗 climate.copernicus.eu</a>
+      </div>
+
+      <div class="info-card">
+        <h4>IPCC Sixth Assessment Report (AR6 WG I)</h4>
+        <p>Intergovernmental Panel on Climate Change synthesis: The Physical Science Basis (2021/2023) documenting baseline shifts and carbon cycle models.</p>
+        <a class="info-source-link" href="https://www.ipcc.ch/report/ar6/wg1/" target="_blank">🔗 ipcc.ch/report/ar6/wg1</a>
+      </div>
+    </div>
+
+    <!-- AI Chat Section -->
+    <div class="chat-section">
+      <div class="chat-quick-tags">
+        <span class="quick-tag" onclick="quickAsk('Explain the colors')">🎨 Colors</span>
+        <span class="quick-tag" onclick="quickAsk('How does sound work?')">🔊 Audio formula</span>
+        <span class="quick-tag" onclick="quickAsk('Give me a fun climate trivia')">💡 Trivia</span>
+        <span class="quick-tag" onclick="quickAsk('What are the key data sources?')">📚 Sources</span>
+      </div>
+
+      <div class="chat-messages" id="chatMessages">
+        <div class="chat-msg bot">
+          Hello! I'm <strong>Dr. Jo</strong>. Ask me anything about the timeline, global temperatures, or audio frequency!
+        </div>
+      </div>
+
+      <form class="chat-input-bar" id="chatForm">
+        <input type="text" id="chatInput" placeholder="Ask Dr. Jo about Earth's climate..." autocomplete="off"/>
+        <button type="submit" class="chat-send-btn">↑</button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Bottom Timeline Player -->
+  <div class="bottom-timeline-deck">
+    <div class="timeline-metric">
+      <div class="current-year">
+        <span id="display-year">1980</span>
+        <span class="current-anomaly" id="display-anomaly">+0.26 °C</span>
+      </div>
+      <div class="current-freq" id="display-freq">🔊 294 Hz • Lower Pitch</div>
+    </div>
+
+    <div class="timeline-scrubber-wrapper">
+      <div class="chart-container" id="barChartContainer"></div>
+      <input type="range" class="timeline-slider" id="yearSlider" min="1980" max="2026" value="1980" step="1"/>
+      <div class="timeline-years-legend">
+        <span>1980</span>
+        <span>1990</span>
+        <span>2000</span>
+        <span>2010</span>
+        <span>2020</span>
+        <span>2024</span>
+        <span>2026</span>
+      </div>
+    </div>
+
+    <div class="playback-controls">
+      <button class="ctrl-btn" id="btn-sound-toggle">🔊 Audio On</button>
+      <button class="ctrl-btn play" id="btn-play">▶ Play timeline</button>
+      <button class="ctrl-btn" id="btn-speed">1.0x</button>
+    </div>
+  </div>
+
+  <script>
+    /* ========================================================
+       1. HISTORICAL CLIMATE DATASET (1980 - 2026)
+       Global Surface Temperature Anomaly vs 1951-1980 Baseline (°C)
+       ======================================================== */
+    const climateHistory = [
+      { year: 1980, anomaly: 0.26, event: "Mount St. Helens eruption reflects sunlight" },
+      { year: 1981, anomaly: 0.32, event: "Global warming signal emerges above variance" },
+      { year: 1982, anomaly: 0.18, event: "El Chichón volcanic aerosol cooling" },
+      { year: 1983, anomaly: 0.31, event: "Major 1982-83 El Niño event" },
+      { year: 1984, anomaly: 0.16, event: "Cooling period across northern latitudes" },
+      { year: 1985, anomaly: 0.12, event: "Antarctic ozone hole discovered" },
+      { year: 1986, anomaly: 0.23, event: "Moderate El Niño conditions form" },
+      { year: 1987, anomaly: 0.32, event: "Montreal Protocol signed" },
+      { year: 1988, anomaly: 0.39, event: "Historic North American summer drought" },
+      { year: 1989, anomaly: 0.27, event: "Strong La Niña phase dampens warming" },
+      { year: 1990, anomaly: 0.45, event: "First IPCC Assessment Report published" },
+      { year: 1991, anomaly: 0.41, event: "Mount Pinatubo massive volcanic eruption" },
+      { year: 1992, anomaly: 0.22, event: "Pinatubo sulfur aerosol cools globe by ~0.5°C" },
+      { year: 1993, anomaly: 0.24, event: "TOPEX/Poseidon altimeter begins sea level record" },
+      { year: 1994, anomaly: 0.32, event: "Global maritime temperatures start rapid rise" },
+      { year: 1995, anomaly: 0.45, event: "IPCC: 'Balance of evidence suggests human influence'" },
+      { year: 1996, anomaly: 0.33, event: "Temporary polar cooling anomaly" },
+      { year: 1997, anomaly: 0.48, event: "Onset of historic 'Super El Niño'" },
+      { year: 1998, anomaly: 0.63, event: "Record warm year driven by mega El Niño" },
+      { year: 1999, anomaly: 0.40, event: "Terra satellite launched by NASA" },
+      { year: 2000, anomaly: 0.40, event: "La Niña dominance keeps values stable" },
+      { year: 2001, anomaly: 0.54, event: "Warmest non-El Niño year on record to date" },
+      { year: 2002, anomaly: 0.63, event: "Larsen B Ice Shelf collapses in Antarctica" },
+      { year: 2003, anomaly: 0.62, event: "Catastrophic European summer heatwave" },
+      { year: 2004, anomaly: 0.54, event: "Aura atmospheric chemistry satellite launched" },
+      { year: 2005, anomaly: 0.68, event: "Amazon undergoes once-in-a-century drought" },
+      { year: 2006, anomaly: 0.64, event: "Arctic sea ice winter minimum record low" },
+      { year: 2007, anomaly: 0.66, event: "Dramatic drop in Arctic summer sea ice extent" },
+      { year: 2008, anomaly: 0.54, event: "Solar minimum and La Niña dip" },
+      { year: 2009, anomaly: 0.66, event: "Global ocean heat content sets historic high" },
+      { year: 2010, anomaly: 0.72, event: "Russian heatwave & Pakistan floods" },
+      { year: 2011, anomaly: 0.61, event: "Suomi NPP Earth observation satellite launched" },
+      { year: 2012, anomaly: 0.65, event: "Arctic sea ice collapses to all-time low" },
+      { year: 2013, anomaly: 0.68, event: "Mauna Loa passes 400 ppm CO2 threshold" },
+      { year: 2014, anomaly: 0.75, event: "New modern global warmth record" },
+      { year: 2015, anomaly: 0.90, event: "Paris Climate Agreement signed; major El Niño" },
+      { year: 2016, anomaly: 1.02, event: "First year crossing +1.0 °C above baseline" },
+      { year: 2017, anomaly: 0.93, event: "Warmest year recorded without El Niño" },
+      { year: 2018, anomaly: 0.85, event: "Widespread global wildfire season" },
+      { year: 2019, anomaly: 0.98, event: "Second warmest year on record at the time" },
+      { year: 2020, anomaly: 1.02, event: "Ties 2016 as warmest year; Siberian heat dome" },
+      { year: 2021, anomaly: 0.85, event: "Pacific Northwest heat dome breaks records" },
+      { year: 2022, anomaly: 0.89, event: "Triple-dip La Niña concludes" },
+      { year: 2023, anomaly: 1.18, event: "Unprecedented ocean surface temperatures worldwide" },
+      { year: 2024, anomaly: 1.30, event: "Consecutive months exceed +1.5 °C above pre-industrial" },
+      { year: 2025, anomaly: 1.32, event: "Global Earth Observation synthesis year" },
+      { year: 2026, anomaly: 1.35, event: "Present timeline observation" }
+    ];
+
+    function anomalyToHz(anomaly) {
+      return Math.round(260 + (anomaly * 130));
+    }
+
+    /* ========================================================
+       2. THREE.JS REALISTIC ROTATABLE GLOBE
+       ======================================================== */
+    const globeContainer = document.getElementById('globe-container');
+    const scene = new THREE.Scene();
+
+    const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const initialCamPos = { x: -1.8, y: 0.6, z: 2.8 };
+    camera.position.set(initialCamPos.x, initialCamPos.y, initialCamPos.z);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    globeContainer.appendChild(renderer.domElement);
+
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.minDistance = 1.5;
+    controls.maxDistance = 5.0;
+
+    const ambientLight = new THREE.AmbientLight(0xffffff, 0.85);
+    scene.add(ambientLight);
+    const sunLight = new THREE.DirectionalLight(0xfff5e6, 1.6);
+    sunLight.position.set(5, 3, 4);
+    scene.add(sunLight);
+
+    const textureLoader = new THREE.TextureLoader();
+    const earthBaseMap = textureLoader.load('https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg');
+    const earthBumpMap = textureLoader.load('https://unpkg.com/three-globe/example/img/earth-topology.png');
+    const cloudsMap = textureLoader.load('https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/earth_clouds_1024.png');
+
+    const earthRadius = 1.0;
+    const earthGeo = new THREE.SphereGeometry(earthRadius, 64, 64);
+    const earthMat = new THREE.MeshPhongMaterial({
+      map: earthBaseMap,
+      bumpMap: earthBumpMap,
+      bumpScale: 0.03,
+      shininess: 12
+    });
+    const earthMesh = new THREE.Mesh(earthGeo, earthMat);
+    scene.add(earthMesh);
+
+    // Thermal Heat Anomaly Overlay
+    const thermalVertexShader = `
+      varying vec2 vUv;
+      varying vec3 vNormal;
+      void main() {
+        vUv = uv;
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+      }
+    `;
+
+    const thermalFragmentShader = `
+      uniform float u_warmth;
+      varying vec2 vUv;
+      varying vec3 vNormal;
+
+      void main() {
+        float latFactor = abs(vUv.y - 0.5) * 2.0; 
+        float noise = sin(vUv.x * 24.0) * cos(vUv.y * 18.0) * 0.2;
+        float heat = clamp((u_warmth * 1.2) + noise + (latFactor * 0.3), 0.0, 1.0);
+
+        vec3 coolColor = vec3(0.05, 0.4, 0.6);
+        vec3 midColor = vec3(0.85, 0.65, 0.1);
+        vec3 hotColor = vec3(0.9, 0.15, 0.05);
+
+        vec3 color = mix(coolColor, midColor, smoothstep(0.0, 0.5, heat));
+        color = mix(color, hotColor, smoothstep(0.5, 1.0, heat));
+
+        float alpha = clamp(0.20 + (u_warmth * 0.40), 0.18, 0.65);
+        gl_FragColor = vec4(color, alpha);
+      }
+    `;
+
+    const thermalMat = new THREE.ShaderMaterial({
+      vertexShader: thermalVertexShader,
+      fragmentShader: thermalFragmentShader,
+      uniforms: { u_warmth: { value: 0.1 } },
+      transparent: true,
+      blending: THREE.AdditiveBlending
+    });
+    const thermalMesh = new THREE.Mesh(new THREE.SphereGeometry(earthRadius + 0.006, 64, 64), thermalMat);
+    earthMesh.add(thermalMesh);
+
+    // Atmospheric Clouds
+    const cloudMat = new THREE.MeshStandardMaterial({
+      map: cloudsMap,
+      transparent: true,
+      opacity: 0.32,
+      blending: THREE.AdditiveBlending
+    });
+    const cloudMesh = new THREE.Mesh(new THREE.SphereGeometry(earthRadius + 0.015, 64, 64), cloudMat);
+    earthMesh.add(cloudMesh);
+
+    // Star Dust
+    const starGeo = new THREE.BufferGeometry();
+    const starCount = 700;
+    const starPos = new Float32Array(starCount * 3);
+    for (let i = 0; i < starCount * 3; i++) {
+      starPos[i] = (Math.random() - 0.5) * 60;
+    }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0x677b93, size: 0.04 })));
+
+    /* ========================================================
+       3. WEB AUDIO ENGINE
+       ======================================================== */
+    let audioCtx = null;
+    let osc = null;
+    let gainNode = null;
+    let isAudioEnabled = true;
+
+    function initAudio() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        osc = audioCtx.createOscillator();
+        gainNode = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(294, audioCtx.currentTime);
+        gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+        osc.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+        osc.start();
+      }
+    }
+
+    function setAudioPitch(freq) {
+      if (!audioCtx || !osc) return;
+      osc.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.05);
+    }
+
+    document.getElementById('btn-sound-toggle').addEventListener('click', (e) => {
+      initAudio();
+      isAudioEnabled = !isAudioEnabled;
+      if (gainNode) {
+        gainNode.gain.setTargetAtTime(isAudioEnabled ? 0.05 : 0, audioCtx.currentTime, 0.05);
+      }
+      e.target.innerText = isAudioEnabled ? "🔊 Audio On" : "🔈 Audio Muted";
+    });
+
+    /* ========================================================
+       4. UI TOGGLES (COLLAPSIBLE SIDEBAR & ZEN VIEW)
+       ======================================================== */
+    const rightSidebar = document.getElementById('rightSidebar');
+    const btnCloseSidebar = document.getElementById('btn-close-sidebar');
+    const btnOpenSidebar = document.getElementById('btn-open-sidebar');
+    const btnToggleBox = document.getElementById('btn-toggle-box');
+    const btnToggleUI = document.getElementById('btn-toggle-ui');
+    const btnResetView = document.getElementById('btn-reset-view');
+
+    function toggleSidebar(forceState) {
+      const isCollapsed = forceState !== undefined ? !forceState : !rightSidebar.classList.contains('collapsed');
+      rightSidebar.classList.toggle('collapsed', isCollapsed);
+      btnOpenSidebar.classList.toggle('visible', isCollapsed);
+    }
+
+    btnCloseSidebar.addEventListener('click', () => toggleSidebar(false));
+    btnOpenSidebar.addEventListener('click', () => toggleSidebar(true));
+    btnToggleBox.addEventListener('click', () => {
+      const willBeCollapsed = !rightSidebar.classList.contains('collapsed');
+      toggleSidebar(!willBeCollapsed);
+    });
+
+    // Zen / Clean Mode: Hides all overlays for a clear view of the planet
+    btnToggleUI.addEventListener('click', () => {
+      document.body.classList.toggle('clean-mode');
+      const isClean = document.body.classList.contains('clean-mode');
+      btnToggleUI.innerText = isClean ? "👁 Show UI" : "👁 Zen View";
+      btnToggleUI.classList.toggle('active', !isClean);
+    });
+
+    // Reset 3D Globe camera orientation
+    btnResetView.addEventListener('click', () => {
+      camera.position.set(initialCamPos.x, initialCamPos.y, initialCamPos.z);
+      controls.target.set(0, 0, 0);
+      controls.update();
+    });
+
+    /* ========================================================
+       5. SIDEBAR TAB NAVIGATION (GUIDE, EVIDENCE, SOURCES)
+       ======================================================== */
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabPanes = document.querySelectorAll('.tab-pane');
+
+    tabButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabButtons.forEach(b => b.classList.remove('active'));
+        tabPanes.forEach(p => p.classList.remove('active'));
+        btn.classList.add('active');
+        const targetId = btn.getAttribute('data-tab');
+        document.getElementById(targetId).classList.add('active');
+      });
+    });
+
+    /* ========================================================
+       6. YEAR SELECTORS & DYNAMIC COMPARISON
+       ======================================================== */
+    const selectYear1 = document.getElementById('select-year-1');
+    const selectYear2 = document.getElementById('select-year-2');
+
+    // Populate dropdowns with all years
+    climateHistory.forEach(item => {
+      const opt1 = document.createElement('option');
+      opt1.value = item.year;
+      opt1.textContent = `${item.year} (+${item.anomaly.toFixed(2)} °C)`;
+      selectYear1.appendChild(opt1);
+
+      const opt2 = document.createElement('option');
+      opt2.value = item.year;
+      opt2.textContent = `${item.year} (+${item.anomaly.toFixed(2)} °C)`;
+      selectYear2.appendChild(opt2);
+    });
+
+    // Default selection: 1980 vs 2024
+    selectYear1.value = 1980;
+    selectYear2.value = 2024;
+
+    document.getElementById('btn-listen-compare').addEventListener('click', () => {
+      initAudio();
+      const yr1 = parseInt(selectYear1.value);
+      const yr2 = parseInt(selectYear2.value);
+
+      const data1 = climateHistory.find(d => d.year === yr1);
+      const data2 = climateHistory.find(d => d.year === yr2);
+      const freq1 = anomalyToHz(data1.anomaly);
+      const freq2 = anomalyToHz(data2.anomaly);
+
+      addBotMessage(`Playing **${yr1}** (+${data1.anomaly.toFixed(2)} °C) at **${freq1} Hz**...`);
+      applyYear(climateHistory.indexOf(data1));
+
+      setTimeout(() => {
+        const deltaTemp = (data2.anomaly - data1.anomaly).toFixed(2);
+        const deltaFreq = freq2 - freq1;
+        const sign = deltaFreq >= 0 ? "+" : "";
+
+        addBotMessage(`Now switching to **${yr2}** (+${data2.anomaly.toFixed(2)} °C) at **${freq2} Hz**.\nDifference: ${deltaTemp > 0 ? '+' : ''}${deltaTemp} °C (${sign}${deltaFreq} Hz pitch change).`);
+        applyYear(climateHistory.indexOf(data2));
+      }, 2600);
+    });
+
+    /* ========================================================
+       7. TIMELINE CONTROLLER & BAR CHART
+       ======================================================== */
+    let currentIndex = 0;
+    let isPlaying = false;
+    let playInterval = null;
+    let playSpeed = 1.0;
+
+    const barChartContainer = document.getElementById('barChartContainer');
+    const yearSlider = document.getElementById('yearSlider');
+    const displayYear = document.getElementById('display-year');
+    const displayAnomaly = document.getElementById('display-anomaly');
+    const displayFreq = document.getElementById('display-freq');
+    const guideYearTxt = document.getElementById('guide-year-txt');
+    const guideTempVal = document.getElementById('guide-temp-val');
+    const guideDesc = document.getElementById('guide-desc');
+    const btnPlay = document.getElementById('btn-play');
+    const btnSpeed = document.getElementById('btn-speed');
+
+    // Build timeline bar chart
+    climateHistory.forEach((item, index) => {
+      const bar = document.createElement('div');
+      bar.className = 'chart-bar';
+      const heightPercent = Math.max(12, Math.round((item.anomaly / 1.45) * 100));
+      bar.style.height = `${heightPercent}%`;
+
+      const redVal = Math.round((item.anomaly / 1.4) * 230);
+      bar.style.background = `rgb(${redVal + 40}, ${180 - redVal * 0.5}, ${160 - redVal * 0.6})`;
+
+      bar.addEventListener('click', () => {
+        applyYear(index);
+      });
+      barChartContainer.appendChild(bar);
+    });
+
+    function applyYear(index) {
+      currentIndex = index;
+      const data = climateHistory[index];
+      const freq = anomalyToHz(data.anomaly);
+
+      // UI updates
+      displayYear.innerText = data.year;
+      displayAnomaly.innerText = `+${data.anomaly.toFixed(2)} °C`;
+      displayFreq.innerText = `🔊 ${freq} Hz • ${data.anomaly > 0.8 ? 'Higher Pitch' : 'Baseline Tone'}`;
+      guideYearTxt.innerText = data.year;
+      guideTempVal.innerText = `+${data.anomaly.toFixed(2)} °C`;
+      guideDesc.innerHTML = `In <strong>${data.year}</strong>, the temperature difference was <strong>+${data.anomaly.toFixed(2)} °C</strong>. Key observation: ${data.event}. Resonant pitch: <strong>${freq} Hz</strong>.`;
+
+      yearSlider.value = data.year;
+
+      // Update active bar state
+      document.querySelectorAll('.chart-bar').forEach((b, i) => {
+        b.classList.toggle('active', i === index);
+      });
+
+      // Update 3D Earth thermal shader uniform (0.0 to 1.0)
+      const warmthVal = (data.anomaly - 0.1) / 1.25;
+      thermalMat.uniforms.u_warmth.value = Math.max(0.05, Math.min(1.0, warmthVal));
+
+      // Update Audio Pitch
+      setAudioPitch(freq);
+    }
+
+    yearSlider.addEventListener('input', (e) => {
+      initAudio();
+      const yr = parseInt(e.target.value);
+      const idx = climateHistory.findIndex(d => d.year === yr);
+      if (idx !== -1) applyYear(idx);
+    });
+
+    btnPlay.addEventListener('click', () => {
+      initAudio();
+      if (isPlaying) {
+        stopPlayback();
+      } else {
+        startPlayback();
+      }
+    });
+
+    function startPlayback() {
+      isPlaying = true;
+      btnPlay.innerText = "⏸ Pause";
+      btnPlay.classList.add('play');
+      const stepTime = Math.round(500 / playSpeed);
+      playInterval = setInterval(() => {
+        let nextIdx = currentIndex + 1;
+        if (nextIdx >= climateHistory.length) nextIdx = 0;
+        applyYear(nextIdx);
+      }, stepTime);
+    }
+
+    function stopPlayback() {
+      isPlaying = false;
+      btnPlay.innerText = "▶ Play timeline";
+      clearInterval(playInterval);
+    }
+
+    btnSpeed.addEventListener('click', () => {
+      if (playSpeed === 1.0) playSpeed = 1.5;
+      else if (playSpeed === 1.5) playSpeed = 0.5;
+      else playSpeed = 1.0;
+      btnSpeed.innerText = `${playSpeed.toFixed(1)}x`;
+      if (isPlaying) {
+        stopPlayback();
+        startPlayback();
+      }
+    });
+
+    /* ========================================================
+       8. DR. JO AI CLIMATE GUIDE (CHAT ENGINE)
+       ======================================================== */
+    const chatForm = document.getElementById('chatForm');
+    const chatInput = document.getElementById('chatInput');
+    const chatMessages = document.getElementById('chatMessages');
+
+    function addUserMessage(text) {
+      const msg = document.createElement('div');
+      msg.className = 'chat-msg user';
+      msg.innerText = text;
+      chatMessages.appendChild(msg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function addBotMessage(text) {
+      const msg = document.createElement('div');
+      msg.className = 'chat-msg bot';
+      msg.innerHTML = text.replace(/\n/g, '<br/>');
+      chatMessages.appendChild(msg);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    chatForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const query = chatInput.value.trim();
+      if (!query) return;
+
+      addUserMessage(query);
+      chatInput.value = '';
+
+      setTimeout(() => {
+        const reply = answerClimateQuery(query);
+        addBotMessage(reply);
+      }, 300);
+    });
+
+    function quickAsk(text) {
+      addUserMessage(text);
+      setTimeout(() => {
+        addBotMessage(answerClimateQuery(text));
+      }, 250);
+    }
+
+    function answerClimateQuery(q) {
+      const lower = q.toLowerCase();
+      const currentYearData = climateHistory[currentIndex];
+
+      if (lower.includes('color') || lower.includes('explain the colors')) {
+        return "The map displays temperature anomalies relative to the 1951–1980 baseline. **Deep cyan/blues** indicate cooler than normal temperatures, while **glowing amber and crimson** highlight extreme warmth (>+1.5 °C).";
+      }
+      if (lower.includes('sound') || lower.includes('formula') || lower.includes('work') || lower.includes('pitch')) {
+        return "Each anomaly is sonified directly using the mathematical formula: <code>Frequency = 260Hz + (Anomaly × 130)</code>. In 1980, the frequency starts at 294 Hz, climbing to >430 Hz in recent record years.";
+      }
+      if (lower.includes('sources') || lower.includes('data') || lower.includes('provenance')) {
+        return "Data is sourced from **NASA GISTEMP v4**, **NOAA NCEI**, **Copernicus ERA5**, and the **IPCC Sixth Assessment Report**. Check the 'Sources' tab above for direct scientific links!";
+      }
+      if (lower.includes('trivia') || lower.includes('fact')) {
+        const trivias = [
+          "Did you know? 2023 was the warmest year recorded globally since 1880, driven by greenhouse warming and a strong El Niño.",
+          "NASA's Terra satellite has orbited Earth since December 1999, taking over 100,000 observations of our planet.",
+          "Mount Pinatubo's 1991 eruption blasted 20 million tons of sulfur dioxide into the stratosphere, temporarily cooling the globe by ~0.5 °C in 1992!"
+        ];
+        return "💡 **Dr. Jo's Trivia:** " + trivias[Math.floor(Math.random() * trivias.length)];
+      }
+      if (lower.includes('current') || lower.includes('now') || lower.includes('this year')) {
+        return `We are currently viewing **${currentYearData.year}** with a global anomaly of **+${currentYearData.anomaly.toFixed(2)} °C** (${anomalyToHz(currentYearData.anomaly)} Hz). Key observation: ${currentYearData.event}.`;
+      }
+      return `That's an important climate science question! In our active year (**${currentYearData.year}**), Earth experienced +${currentYearData.anomaly} °C anomaly. Try asking about *'Colors'*, *'Audio formula'*, or check the *'Evidence'* and *'Sources'* tabs!`;
+    }
+
+    /* ========================================================
+       9. ANIMATION LOOP & RESIZE
+       ======================================================== */
+    function animate() {
+      requestAnimationFrame(animate);
+      earthMesh.rotation.y += 0.0006;
+      cloudMesh.rotation.y += 0.0008;
+      controls.update();
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    // Initialize first year (1980)
+    applyYear(0);
+  </script>
+</body>
+</html>
